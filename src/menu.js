@@ -1,19 +1,20 @@
 import Enquirer from 'enquirer';
-import configs from './config.js';
 import api from './api.js';
-import vimShortcuts from './vim-shortcuts.js';
+import batchDownload from './batch-download.js';
+import configs from './config.js';
 import fs from 'fs';
 import open from 'open';
+import vimShortcuts from './vim-shortcuts.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function startMenu(){
 	console.clear();
-	let accountPrompt = configs.isLoggedIn()?"Sign out":"Log in/Sign up";
+	let accountPrompt = configs.isLoggedIn()?"Sign out":"Log in";
 	const prompt = new Enquirer.Select({
 		name: 'startmenu',
 		message: 'What would you like to do?',
-		choices: [accountPrompt, "Search Z-Library", "Browse downloaded books", "settings"],
+		choices: [accountPrompt, "Search Z-Library", "Batch download from JSON", "Browse downloaded books", "settings"],
 		actions:vimShortcuts
 	});
 	let result = await prompt.run();
@@ -22,11 +23,14 @@ async function startMenu(){
 			api.logout();
 			startMenu();
 			break;
-		case "Log in/Sign up":
+		case "Log in":
 			loginOptions();
 			break;
 		case "Search Z-Library":
 			await searchMenu();
+			break;
+		case "Batch download from JSON":
+			await batchDownloadMenu();
 			break;
 		case "Browse downloaded books":
 			openDownloads();
@@ -55,7 +59,7 @@ async function loginOptions(){
 	const prompt = new Enquirer.Select({
 		name: "loginMenu",
 		message: "What would you like to do?",
-		choices: ["Log in", "Sign up", "Log in with user key", "Update personal domain", "Back"],
+		choices: ["Log in", "Log in with user key", "Update personal domain", "Back"],
 		actions:vimShortcuts	
 	});
 	let result = await prompt.run();
@@ -65,9 +69,6 @@ async function loginOptions(){
 			break;
 		case "Log in":
 			loginMenu();
-			break;
-		case "Sign up":
-			signupMenu();
 			break;
 		case "Log in with user key":
 			tokenLoginMenu();
@@ -91,21 +92,6 @@ async function loginMenu(){
 	const response = await prompt.run();
 	await api.login(response.mail, response.password);
 	startMenu();
-}
-async function signupMenu(){
-        console.clear();
-        const prompt = new Enquirer.Form({
-                name: "signupForm",
-                message:"Sign up to Z-Library",
-                choices: [
-                        {name: "mail", type: "input", message: "E-Mail", initial:"johndoe@example.com"},
-                        {name: "name", type: "name", message: "User name", initial:"JohnDoe"},
-                        {name:"password", type: "password", message: "Password", initial:"your password"}
-                ]
-        })
-        const response = await prompt.run();
-        await api.signup(response.mail, response.password, response.name);
-        startMenu();
 }
 async function tokenLoginMenu(){
 	console.clear();
@@ -227,4 +213,67 @@ async function downloadMenu(id, hash){
 	await startMenu();
 	
 }
-export default {errorPrompt,startMenu,settingsMenu, loginOptions, loginMenu,signupMenu, tokenLoginMenu, openDownloads, searchMenu, bookListMenu, viewBook, downloadMenu};
+
+/**
+ * Menu for batch downloading books from JSON file
+ */
+async function batchDownloadMenu() {
+	console.clear();
+	
+	// Check if user is logged in
+	if (!configs.isLoggedIn()) {
+		await errorPrompt('You must be logged in to download books. Please log in first.');
+		await startMenu();
+		return;
+	}
+	
+	const prompt = new Enquirer.Form({
+		name: 'batchForm',
+		message: 'Batch Download from JSON',
+		choices: [
+			{
+				name: 'jsonPath',
+				type: 'input',
+				message: 'Path to JSON file with books list',
+				initial: './books.json',
+				validate: (value) => {
+					if (!value.trim()) {
+						return 'Please enter a file path';
+					}
+					if (!fs.existsSync(value.trim())) {
+						return 'File does not exist';
+					}
+					return true;
+				}
+			}
+		]
+	});
+	
+	try {
+		const response = await prompt.run();
+		const jsonPath = response.jsonPath.trim();
+		
+		// Confirm before starting
+		const confirmPrompt = new Enquirer.Toggle({
+			message: `Start batch download from ${jsonPath}?`,
+			enabled: 'Yes',
+			disabled: 'No'
+		});
+		
+		const confirmed = await confirmPrompt.run();
+		
+		if (confirmed) {
+			await batchDownload.batchDownload(jsonPath);
+		}
+		
+		await startMenu();
+		
+	} catch (error) {
+		if (error.message !== 'cancelled') {
+			await errorPrompt(`Error: ${error.message}`);
+		}
+		await startMenu();
+	}
+}
+
+export default {errorPrompt,startMenu,settingsMenu, loginOptions, loginMenu, tokenLoginMenu, openDownloads, searchMenu, bookListMenu, viewBook, downloadMenu, batchDownloadMenu};

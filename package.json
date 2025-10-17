@@ -13,9 +13,10 @@
     "axios": "^1.3.2",
     "conf": "^11.0.1",
     "enquirer": "^2.3.6",
+    "env-paths": "^3.0.0",
     "open": "^8.4.1"
   },
-  "bin":{
-  "zlib-cli":"./cli.js"
+  "bin": {
+    "zlib-cli": "./cli.js"
   }
 }

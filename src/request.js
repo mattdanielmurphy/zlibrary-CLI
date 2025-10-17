@@ -47,7 +47,10 @@ let headers = {};
 	}
 	headers["User-Agent"] = "CLI";
 	return await axios.get(url, {responseType: "arraybuffer", headers, onDownloadProgress:progressEvent=>{
-		console.log(Math.floor(progressEvent.progress* 100) + "%")
-	}});
+		process.stdout.write(`\r  📥 Downloading file... ${Math.floor(progressEvent.progress* 100)}%`);
+	}}).then(response => {
+		process.stdout.write(`\r  ✅ Downloaded successfully\n`);
+		return response;
+	});
 }
 export default {GETRequest, POSTRequest, download};

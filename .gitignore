@@ -1,1 +1,2 @@
 node_modules/
+\n# User-specific files\nIMG_1041.jpeg\n\n# Generated book lists\nbooks.json\nbooks_log.json\nbooks_undownloaded.json\nfailedDownloads.json\ndownloadedBooks.json
