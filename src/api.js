@@ -56,13 +56,15 @@ function logout(){
 	configs.logout();
 	return true;
 }
-async function getDownloadLink(id, hash){
+async function getDownloadLink(id, hash, isStandardDownload = false){
 	let response = (await requests.GETRequest(`/eapi/book/${id}/${hash}/file`)).data;
 	if(!response.file){
 		return false;
 	}
-	response.filename = configs.getDownloadPath() + "/" + response.file.description.replaceAll(/\.| |\\|\/|\:/g, "") + "." + response.file.extension; 
-	console.log(response);
+	if (isStandardDownload) {
+		const safeTitle = response.file.description.replace(/[.\\/:]/g, "").replace(/\s/g, "_");
+		response.filename = `${safeTitle}.${response.file.extension}`; 
+	}
 	return response;
 }
 async function downloadFile(url){

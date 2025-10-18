@@ -1,2 +1,13 @@
+# Dependencies
 node_modules/
-\n# User-specific files\nIMG_1041.jpeg\n\n# Generated book lists\nbooks.json\nbooks_log.json\nbooks_undownloaded.json\nfailedDownloads.json\ndownloadedBooks.json
+
+# Generated book lists and logs
+books.json
+downloadedBooks.json
+books_log.json
+books_undownloaded.json
+failedDownloads.json
+
+# Environment variables
+.env
+telegram-cli.js

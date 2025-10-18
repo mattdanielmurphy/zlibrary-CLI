@@ -12,6 +12,8 @@ const configSchema = {
 	personalDomain: {type: 'string', default: ''},
 	lang: {type: 'string', default: 'EN'},
 	downloadPath: {type: 'string', default: configPath + '/downloads'},
+	defaultExtensions: {type: 'string', default: 'epub'},
+	defaultLanguages: {type: 'string', default: 'english'},
 };
 
 const config = new Conf ({projectName: 'zlibCLI', schema:configSchema});
@@ -85,9 +87,16 @@ function getLang(){
 function getDownloadPath(){
 	return config.get("downloadPath");
 }
+function getDefaultExtensions(){
+	return config.get("defaultExtensions");
+}
+function getDefaultLanguages(){
+	return config.get("defaultLanguages");
+}
 function saveSettings(settings){
 	for(let setting in settings){
 		config.set(setting, settings[setting])
 	}
 }
-export default {isLoggedIn, login, logout, addDownloadedBook, setMirror, setLang, getLogin, getMirror, isBookInstalled, getLang, getDownloadPath, setPersonalDomain, saveSettings};
+
+export default {isLoggedIn, login, logout, addDownloadedBook, setMirror, setLang, getLogin, getMirror, isBookInstalled, getLang, getDownloadPath, setPersonalDomain, saveSettings, getDefaultExtensions, getDefaultLanguages};
