@@ -10,3 +10,6 @@ failedDownloads.json
 
 # Environment variables
 .env
+
+# macOS metadata
+.DS_Store
