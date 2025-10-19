@@ -334,8 +334,8 @@ async function bookListMenu(bookList, searchParams){
 		
 		// Add the new search option
 		navigationChoices.push({ name: 're_search', message: `Search for .${nextExtension.toLowerCase()}` });
-		// Add the new search for all types option
-		navigationChoices.push({ name: 're_search_all', message: 'Search for all types' });
+		// Add the new search for all types option, which can be customized
+		navigationChoices.push({ name: 're_search_all', message: 'Search for all types (or enter custom)' });
 		
 		navigationChoices.push({ name: 'cancel', message: 'Cancel Search' });
 
@@ -356,7 +356,7 @@ async function bookListMenu(bookList, searchParams){
 		}
 
 		// Update the last selected index if a book was chosen
-		if (!['next', 'prev', 'cancel', 're_search'].includes(postToView)) {
+		if (!['next', 'prev', 'cancel', 're_search', 're_search_all'].includes(postToView)) {
 			lastSelectedGlobalIndex = postToView;
 		}
 
@@ -377,15 +377,37 @@ async function bookListMenu(bookList, searchParams){
 				return; // Exit the current loop/function
 			}
 		} else if (postToView === 're_search_all') {
-			// Re-run search with all default extensions
-			console.log(`\nRe-running search for all types...`);
-			const allExtensions = configs.getAllExtensions().split(',');
-			const newSearchParams = { ...searchParams, extensions: allExtensions };
-			const newResponse = await api.search(newSearchParams);
-			if (newResponse) {
-				// Start a new book list menu with the new results and parameters
-				await bookListMenu(newResponse, newSearchParams);
-				return; // Exit the current loop/function
+			// Prompt for custom extensions, defaulting to all
+			let extensionsString;
+			try {
+				const inputPrompt = new Enquirer.Input({
+					name: 'extensionsString',
+					message: 'Enter extensions (comma-separated)',
+					initial: configs.getAllExtensions(),
+					...(vimShortcuts.isAvailable() && {
+						onRun: vimShortcuts.onRun,
+						onKeypress: vimShortcuts.onKeypress,
+					}),
+				});
+				extensionsString = await inputPrompt.run();
+			} catch (e) {
+				// User cancelled the input prompt, re-show the book list menu
+				continue;
+			}
+
+			if (extensionsString) {
+				console.log(`\nRe-running search for extensions: ${extensionsString}...`);
+				const extensions = extensionsString.split(',').map(ext => ext.trim()).filter(ext => ext.length > 0);
+				const newSearchParams = { ...searchParams, extensions: extensions };
+				const newResponse = await api.search(newSearchParams);
+				if (newResponse) {
+					// Start a new book list menu with the new results and parameters
+					await bookListMenu(newResponse, newSearchParams);
+					return; // Exit the current loop/function
+				}
+			} else {
+				// If user enters an empty string, re-show the menu
+				continue;
 			}
 		} else {
 			// A book was selected
