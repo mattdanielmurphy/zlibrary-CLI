@@ -2,10 +2,10 @@ import Enquirer from 'enquirer';
 import api from './api.js';
 import batchDownload from './batch-download.js';
 import configs from './config.js';
+import { downloadBookViaTelegram } from './telegram.js';
 import fs from 'fs';
 import open from 'open';
 import vimShortcuts from './vim-shortcuts.js';
-import { downloadBookViaTelegram } from './telegram.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -334,6 +334,8 @@ async function bookListMenu(bookList, searchParams){
 		
 		// Add the new search option
 		navigationChoices.push({ name: 're_search', message: `Search for .${nextExtension.toLowerCase()}` });
+		// Add the new search for all types option
+		navigationChoices.push({ name: 're_search_all', message: 'Search for all types' });
 		
 		navigationChoices.push({ name: 'cancel', message: 'Cancel Search' });
 
@@ -368,6 +370,17 @@ async function bookListMenu(bookList, searchParams){
 			// Re-run search with the new extension
 			console.log(`\nRe-running search for .${nextExtension.toLowerCase()}...`);
 			const newSearchParams = { ...searchParams, extensions: [nextExtension.toLowerCase()] };
+			const newResponse = await api.search(newSearchParams);
+			if (newResponse) {
+				// Start a new book list menu with the new results and parameters
+				await bookListMenu(newResponse, newSearchParams);
+				return; // Exit the current loop/function
+			}
+		} else if (postToView === 're_search_all') {
+			// Re-run search with all default extensions
+			console.log(`\nRe-running search for all types...`);
+			const allExtensions = configs.getAllExtensions().split(',');
+			const newSearchParams = { ...searchParams, extensions: allExtensions };
 			const newResponse = await api.search(newSearchParams);
 			if (newResponse) {
 				// Start a new book list menu with the new results and parameters

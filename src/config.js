@@ -3,6 +3,8 @@ import envPaths from 'env-paths';
 
 const configPath = envPaths('zlibCLI').config;
 
+const ALL_EXTENSIONS = 'txt,pdf,fb2,epub,lit,mobi,rtf,djv,djvu,azw,azw3';
+
 const configSchema = {
 	isLoggedIn: {type: 'boolean', default: false},
 	installedBooks: {type: 'array', default: []},
@@ -12,7 +14,7 @@ const configSchema = {
 	personalDomain: {type: 'string', default: ''},
 	lang: {type: 'string', default: 'EN'},
 	downloadPath: {type: 'string', default: configPath + '/downloads'},
-	defaultExtensions: {type: 'string', default: 'epub'},
+	defaultExtensions: {type: 'string', default: ALL_EXTENSIONS},
 	defaultLanguages: {type: 'string', default: 'english'},
 };
 
@@ -93,10 +95,13 @@ function getDefaultExtensions(){
 function getDefaultLanguages(){
 	return config.get("defaultLanguages");
 }
+function getAllExtensions(){
+	return ALL_EXTENSIONS;
+}
 function saveSettings(settings){
 	for(let setting in settings){
 		config.set(setting, settings[setting])
 	}
 }
 
-export default {isLoggedIn, login, logout, addDownloadedBook, setMirror, setLang, getLogin, getMirror, isBookInstalled, getLang, getDownloadPath, setPersonalDomain, saveSettings, getDefaultExtensions, getDefaultLanguages};
+export default {isLoggedIn, login, logout, addDownloadedBook, setMirror, setLang, getLogin, getMirror, isBookInstalled, getLang, getDownloadPath, setPersonalDomain, saveSettings, getDefaultExtensions, getDefaultLanguages, getAllExtensions};
