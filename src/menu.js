@@ -313,7 +313,6 @@ async function filetypesMenu(searchParams) {
 			name: 'extensions',
 			message: 'Select file extensions to search (Space to toggle, Enter to confirm)',
 			choices: choices,
-			actions: vimShortcuts,
 		});
 
 		const selectedExtensions = await prompt.run();
@@ -558,15 +557,36 @@ async function batchDownloadMenu() {
  */
 async function directSearch(searchTerm){
 	const answer = {};
-	answer.message = searchTerm;
 	answer.yearFrom = "0";
 	answer.yearTo = String(new Date().getFullYear());
 	answer.languages = configs.getDefaultLanguages().split(",");
-	answer.extensions = configs.getDefaultExtensions().split(",");
 	answer.limit = 50
 	answer.order = "popular";
+
+	// 1. Parse flags and search term
+	const parts = searchTerm.split(/\s+/);
+	let extensions = configs.getDefaultExtensions().split(",");
+	let queryParts = [];
+
+	for (const part of parts) {
+		if (part.startsWith('-')) {
+			const flag = part.substring(1).toLowerCase();
+			if (flag === 'a') {
+				// -a flag: search for all extensions
+				extensions = configs.getAllExtensions().split(',');
+			} else {
+				// -<extension> flag: search for a specific extension
+				extensions = [flag];
+			}
+		} else {
+			queryParts.push(part);
+		}
+	}
+
+	answer.message = queryParts.join(' ');
+	answer.extensions = extensions;
 	
-	console.log(`Searching Z-Library for: "${searchTerm}"`);
+	console.log(`Searching Z-Library for: "${answer.message}"`);
 	console.log(`Languages: ${answer.languages.join(', ')} | Extensions: ${answer.extensions.join(', ')}`);
 
 	const response = await api.search(answer);
