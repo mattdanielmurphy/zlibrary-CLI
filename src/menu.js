@@ -301,11 +301,11 @@ async function filetypesMenu(searchParams) {
 	const allExtensions = configs.getAllExtensions().split(',');
 	const currentExtensions = searchParams.extensions;
 
-	// Create choices with the current extensions pre-selected
+	// Create choices with all extensions pre-selected
 	const choices = allExtensions.map(ext => ({
 		name: ext.toUpperCase(),
 		value: ext,
-		checked: currentExtensions.includes(ext),
+		checked: true, // Always start with all selected
 	}));
 
 	try {
@@ -313,6 +313,7 @@ async function filetypesMenu(searchParams) {
 			name: 'extensions',
 			message: 'Select file extensions to search (Space to toggle, Enter to confirm)',
 			choices: choices,
+			indicator: (state, choice) => (choice.checked ? '✓' : ' '),
 		});
 
 		const selectedExtensions = await prompt.run();
