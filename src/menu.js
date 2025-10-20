@@ -291,6 +291,39 @@ async function viewBook(bookData){
 	}
 }
 
+/**
+ * Displays a multi-select menu for choosing file extensions.
+ * @param {object} searchParams - The current search parameters.
+ * @returns {Promise<string[]>} A promise that resolves to an array of selected extensions.
+ */
+async function filetypesMenu(searchParams) {
+	console.clear();
+	const allExtensions = configs.getAllExtensions().split(',');
+	const currentExtensions = searchParams.extensions;
+
+	// Create choices with the current extensions pre-selected
+	const choices = allExtensions.map(ext => ({
+		name: ext.toUpperCase(),
+		value: ext,
+		checked: currentExtensions.includes(ext),
+	}));
+
+	try {
+		const prompt = new Enquirer.MultiSelect({
+			name: 'extensions',
+			message: 'Select file extensions to search (Space to toggle, Enter to confirm)',
+			choices: choices,
+			actions: vimShortcuts,
+		});
+
+		const selectedExtensions = await prompt.run();
+		return selectedExtensions;
+	} catch (e) {
+		// User cancelled the prompt (Esc)
+		return null;
+	}
+}
+
 async function bookListMenu(bookList, searchParams){
 	const pageSize = 15;
 	let currentPage = 0;
@@ -335,7 +368,7 @@ async function bookListMenu(bookList, searchParams){
 		// Add the new search option
 		navigationChoices.push({ name: 're_search', message: `Search for .${nextExtension.toLowerCase()}` });
 		// Add the new search for all types option, which can be customized
-		navigationChoices.push({ name: 're_search_all', message: 'Search for all types (or enter custom)' });
+		navigationChoices.push({ name: 're_search_custom', message: 'Search for custom filetypes' });
 		
 		navigationChoices.push({ name: 'cancel', message: 'Cancel Search' });
 
@@ -356,7 +389,7 @@ async function bookListMenu(bookList, searchParams){
 		}
 
 		// Update the last selected index if a book was chosen
-		if (!['next', 'prev', 'cancel', 're_search', 're_search_all'].includes(postToView)) {
+		if (!['next', 'prev', 'cancel', 're_search', 're_search_custom'].includes(postToView)) {
 			lastSelectedGlobalIndex = postToView;
 		}
 
@@ -376,37 +409,25 @@ async function bookListMenu(bookList, searchParams){
 				await bookListMenu(newResponse, newSearchParams);
 				return; // Exit the current loop/function
 			}
-		} else if (postToView === 're_search_all') {
-			// Prompt for custom extensions, defaulting to all
-			let extensionsString;
-			try {
-				const inputPrompt = new Enquirer.Input({
-					name: 'extensionsString',
-					message: 'Enter extensions (comma-separated)',
-					initial: configs.getAllExtensions(),
-					...(vimShortcuts.isAvailable() && {
-						onRun: vimShortcuts.onRun,
-						onKeypress: vimShortcuts.onKeypress,
-					}),
-				});
-				extensionsString = await inputPrompt.run();
-			} catch (e) {
-				// User cancelled the input prompt, re-show the book list menu
-				continue;
-			}
+		} else if (postToView === 're_search_custom') {
+			// Open the multi-select menu for custom extensions
+			const selectedExtensions = await filetypesMenu(searchParams);
 
-			if (extensionsString) {
-				console.log(`\nRe-running search for extensions: ${extensionsString}...`);
-				const extensions = extensionsString.split(',').map(ext => ext.trim()).filter(ext => ext.length > 0);
-				const newSearchParams = { ...searchParams, extensions: extensions };
+			if (selectedExtensions && selectedExtensions.length > 0) {
+				console.log(`\nRe-running search for extensions: ${selectedExtensions.join(', ')}...`);
+				const newSearchParams = { ...searchParams, extensions: selectedExtensions };
 				const newResponse = await api.search(newSearchParams);
 				if (newResponse) {
 					// Start a new book list menu with the new results and parameters
 					await bookListMenu(newResponse, newSearchParams);
 					return; // Exit the current loop/function
 				}
+			} else if (selectedExtensions && selectedExtensions.length === 0) {
+				// User selected 0 extensions, show error and continue
+				await errorPrompt("You must select at least one file extension.");
+				continue;
 			} else {
-				// If user enters an empty string, re-show the menu
+				// User cancelled the filetypes menu, re-show the book list menu
 				continue;
 			}
 		} else {
